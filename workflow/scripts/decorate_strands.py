@@ -34,7 +34,7 @@ for read in bam.fetch():
     read_seq = list(read.query_sequence)
     for pos in deam_pos:
         assert read_seq[pos] == strand[1], (
-            f"Position {pos} in read {read_id} does not match expected base {strand[0]}, found {read_seq[pos]}"
+            f"Position {pos} in read {read_id} does not match expected base {strand[1]}, found {read_seq[pos]}"
         )
         read_seq[pos] = deam_dictionary[strand]
     new_seq = "".join(read_seq)
