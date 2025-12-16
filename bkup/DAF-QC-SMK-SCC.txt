@@ -1,0 +1,58 @@
+## Ticket INC20786479
+# 12/11/2025
+# Brian Gregor & Kyle Kurkela
+# rcs.bu.edu 
+
+
+Step 1.  Build pyabpoa manually for compatibility on the SCC.
+
+
+cd /your/projectnb/directory
+# Clone the code repository
+git clone --recursive https://github.com/yangao07/abPOA.git
+cd abPOA 
+git checkout v1.5.4
+
+# The snakemake pipeline uses Python 3.10 so load that module.
+module load python3/3.10.12
+
+# Edit the file called Makefile
+# Change line 53 from:
+#  SIMD_FLAG   = -march=native
+# to:
+#  SIMD_FLAG   = -march=sandybridge
+
+# Build the pyabpoa install file.
+python setup.py bdist_wheel
+
+# Copy the wheel file to your DAF-QC-SMK directory
+cp pyabpoa-1.5.4-cp310-cp310-linux_x86_64.whl /path/to/your/DAF-QC-SMK
+# No need for the Python module after this, so unload it.
+module unload python3/3.10.12
+
+Step 2. Modify the DAF-QC-SMK build.
+
+# Change directory to DAF-QC-SMK
+cd  /path/to/your/DAF-QC-SMK
+# Edit this file:  workflow/envs/python.yaml
+# REMOVE the line that says "  - pyabpoa==1.5.4"
+# And add this to the end of the file. The spaces before the - characters
+# are critical, keep them!:
+  - pip
+  - pip:
+    - /path/to/your_dir/DAF-QC-SMK/pyabpoa-1.5.4-cp310-cp310-linux_x86_64.whl
+
+
+Step 3. Remove any past builds.
+
+# Still in directory workflow/envs/python.yaml
+# Remove the old test.
+rm -rf dafqc-test-data
+
+Step 4. Run the test.
+
+# This will re-download the test data, rebuild the conda environments
+# used by snakemake, and run the test.
+pixi run test 
+
+
