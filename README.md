@@ -153,7 +153,7 @@ This guide explains how to run the **DAF-QC-SMK** pipeline on the BU SCC with a 
    cd /projectnb/ar-rcs/client/cvmar
    ```
 
-2. Clone the `abPOA` repository and checkout version **1.5.4**:
+2. Clone the `abPOA` repository ([GitHub](https://github.com/yangao07/abPOA.git)) and checkout version **1.5.4**:
    ```bash
    # Note: the [--recursive] flag is required as the GitHub repo has submodules (.gitmodules present in repo)
    git clone --recursive https://github.com/yangao07/abPOA.git
