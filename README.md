@@ -138,3 +138,128 @@ Plots include targeting efficiency, deamination rate, strand calling, enzyme bia
 ## Acknowledgements
 
 Thank you to Mitchell Vollger for providing the template for this Snakemake workflow and pixi.toml, and for some of the common functions in [common.smk](workflow/rules/common.smk)
+
+# DAF-QC-SMK Pipeline Setup on BU SCC
+
+This guide explains how to run the **DAF-QC-SMK** pipeline on the BU SCC with a local build of **pyabpoa** for compatibility.
+---
+
+## Step 1: Build `pyabpoa` Locally
+
+1. Navigate to your SCC project directory:
+   ```bash
+   cd /your/projectnb/directory
+   # Example:
+   cd /projectnb/ar-rcs/client/cvmar
+   ```
+
+2. Clone the `abPOA` repository and checkout version **1.5.4**:
+   ```bash
+   # Note: the [--recursive] flag is required as the GitHub repo has submodules (.gitmodules present in repo)
+   git clone --recursive https://github.com/yangao07/abPOA.git
+   cd abPOA
+   git checkout v1.5.4
+   ```
+
+3. Load Python 3.10 (required by Snakemake pipeline):
+   ```bash
+   module load python3/3.10.12
+   ```
+
+4. Edit the **Makefile**:
+   - Change line 53:
+     ```text
+     SIMD_FLAG = -march=native
+     ```
+     to:
+     ```text
+     SIMD_FLAG = -march=sandybridge
+     ```
+
+5. Build the wheel file:
+   ```bash
+   python setup.py bdist_wheel
+   ```
+---
+
+## Step 2: Obtain the Pipeline and Prepare Environment
+
+1. Navigate back to your SCC project folder:
+   ```bash
+   cd /projectnb/ar-rcs/client/cvmar
+   ```
+
+2. Clone the pipeline repository:
+   ```bash
+   git clone https://github.com/StergachisLab/DAF-QC-SMK
+   ```
+
+3. Copy the wheel file to the pipeline directory:
+   ```bash
+   SCC_PROJECT_DIR=/projectnb/ar-rcs/client/cvmar
+   cp ${SCC_PROJECT_DIR}/abPOA/dist/pyabpoa-1.5.4-cp310-cp310-linux_x86_64.whl ${SCC_PROJECT_DIR}/DAF-QC-SMK
+   ```
+
+4. Unload Python module (no longer needed):
+   ```bash
+   module unload python3/3.10.12
+   ```
+---
+
+## Step 3: Modify Pipeline Environment File
+
+1. Navigate to the workflow directory:
+   ```bash
+   cd ${SCC_PROJECT_DIR}/DAF-QC-SMK
+   ```
+2. Edit `workflow/envs/python.yaml`:
+   - **Remove**:
+     ```yaml
+     - pyabpoa==1.5.4
+     ```
+   - **Add** this to the end of the file. The spaces before the - characters are critical, keep them!:
+     ```yaml
+       - pip
+       - pip:
+         - /net/scc-i02/scratch/bgregor/DAF-QC-SMK/pyabpoa-1.5.4-cp310-cp310-linux_x86_64.whl
+     ```
+     Note: there are two spaces preceeding the `- pip` lines and four spaces preceeding the `- /net/...` line.
+
+3. Backup files provided by Brian:
+   ```bash
+   mkdir ${SCC_PROJECT_DIR}/bkup
+   cp /net/scc-i02/scratch/bgregor/to_pushpinder/* ${SCC_PROJECT_DIR}/bkup
+   ```
+---
+
+## Step 4: Clean Previous Test Runs
+```bash
+cd ${SCC_PROJECT_DIR}/DAF-QC-SMK
+rm -rf dafqc-test-data
+```
+---
+
+## Step 5: Test the Pipeline
+
+1. Confirm `pixi` is installed:
+   ```bash
+   pixi --version  # Expected: pixi 0.61.0
+   ```
+
+2. Run the test:
+   ```bash
+   time pixi run test
+   ```
+   - This will download test data, build conda environments, and execute the workflow.
+   - Expected runtime: ~7 minutes.
+   - Logs: `.snakemake/log/<timestamp>.snakemake.log`
+---
+
+### Result
+- Pipeline should complete successfully:
+  ```
+  Finished job 0.
+  17 of 17 steps (100%) done
+  ```
+## Key Details
+* Ticket: [INC20792462](https://bu.service-now.com/now/nav/ui/classic/params/target/incident.do%3Fsysparm_tiny%3D9dfc3f79974e69d09a3a7be0f053afaf%26sys_id%3D0d0653ec933132d034e4b0cdfaba1083%26sysparm_record_row%3D7)
